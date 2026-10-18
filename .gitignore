@@ -1,0 +1,12 @@
+# Build output
+app/build/
+
+# Signing key: keep it out of version control and back it up separately.
+# Anyone with this file can sign an APK that installs as an update over yours.
+*.keystore
+*.jks
+
+# Python and editor clutter
+__pycache__/
+*.pyc
+.DS_Store
