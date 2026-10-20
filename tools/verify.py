@@ -20,6 +20,16 @@ import numpy as np
 def cls(f, nv):
     vals = [f(*vv) for vv in itertools.product([True, False], repeat=nv)]
     return 'tautology' if all(vals) else 'contradiction' if not any(vals) else 'contingency'
+def _nlim(f, g):
+    n = sp.Symbol('n', positive=True)
+    return sp.limit(f(n) / g(n), n, sp.oo)
+def faster(f, g):
+    return _nlim(f, g) == sp.oo
+def theta(f, g):
+    L = _nlim(f, g)
+    return bool(L.is_finite) and L != 0
+def equivn(f, g, n):
+    return all(bool(f(*vv)) == bool(g(*vv)) for vv in itertools.product([True, False], repeat=n))
 def equiv(f, g):
     return all(bool(f(*vv)) == bool(g(*vv)) for vv in itertools.product([True, False], repeat=2))
 
@@ -237,7 +247,7 @@ def solves_heat(fs):
     return 'yes' if simplify(diff(f, tt) + diff(f, xx, 2) / 2) == 0 else 'no'
 env = dict(globals())
 for b in ['sum', 'min', 'max', 'abs', 'round', 'any', 'all', 'range', 'len', 'str', 'int', 'float', 'bool', 'sorted', 'list', 'set']: env[b] = getattr(builtins, b)
-env['product'] = itertools.product; env['permutations'] = itertools.permutations; env['prod'] = math.prod; env['pow'] = builtins.pow; env['reduce'] = functools.reduce; env['np'] = np; env['cls'] = cls; env['equiv'] = equiv; env['syl'] = syl; env['zq'] = zq; env['tq'] = tq; env['c2cdf'] = c2cdf; env['c2q'] = c2q; env['order_q'] = order_q; env['cond'] = cond
+env['product'] = itertools.product; env['permutations'] = itertools.permutations; env['prod'] = math.prod; env['pow'] = builtins.pow; env['reduce'] = functools.reduce; env['np'] = np; env['cls'] = cls; env['equiv'] = equiv; env['equivn'] = equivn; env['faster'] = faster; env['theta'] = theta; env['syl'] = syl; env['zq'] = zq; env['tq'] = tq; env['c2cdf'] = c2cdf; env['c2q'] = c2q; env['order_q'] = order_q; env['cond'] = cond
 from cxx import run_cpp
 from concurrent.futures import ThreadPoolExecutor
 jobs = json.load(open(sys.argv[1]))

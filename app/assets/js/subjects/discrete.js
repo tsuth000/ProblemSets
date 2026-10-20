@@ -78,19 +78,28 @@ registerSubject({
   generators: [
     { id: 'dg-comb', skill: 'Counting', make(R) {
       const n = R.int(7, 15), k = R.int(2, 5), a = R.binom(n, k);
-      return { q: T`How many ways can a committee of ${k} be chosen from ${n} people?`, answer: a,
+      const q = R.pick([T`How many ways can a committee of ${k} be chosen from ${n} people?`, T`A pizza shop offers ${n} toppings. How many pizzas have exactly ${k} different toppings?`,
+        T`How many ${k}-card hands can be dealt from ${n} distinct cards?`, T`A reading list has ${n} books. How many ways can you choose ${k} of them to read?`,
+        T`How many ways can ${k} of ${n} employees be picked for a training session?`, T`A test has ${n} questions and you must answer exactly ${k}. How many choices of questions are there?`]);
+      return { q, answer: a, v: `binomial(${n}, ${k})`,
         x: T`Order does not matter: \(\binom{${n}}{${k}} = \dfrac{${n}!}{${k}!\,${n - k}!} = ${a}\).` };
     } },
     { id: 'dg-perm', skill: 'Counting', make(R) {
       const n = R.int(5, 12), k = R.int(2, 4); let a = 1; const f = [];
       for (let i = 0; i < k; i++) { a *= n - i; f.push(n - i); }
-      return { q: T`${n} runners race. How many different ways can the top ${k} finishing positions be filled?`, answer: a,
+      const roles = ['a president', 'a vice president', 'a treasurer', 'a secretary'].slice(0, k);
+      const q = R.pick([T`${n} runners race. How many different ways can the top ${k} finishing positions be filled?`, T`A club of ${n} members chooses ${roles.slice(0, -1).join(', ')} and ${roles[k - 1]}, all different people. How many outcomes are possible?`,
+        T`How many ${k}-letter codes with no repeated letter can be made from ${n} letters?`, T`${n} songs are available. How many ways can you fill a playlist of ${k} different songs, where order matters?`,
+        T`${n} horses run. How many ways can the first ${k} places finish?`, T`How many ways can ${k} of ${n} guests be seated in a row of ${k} chairs?`]);
+      return { q, answer: a, v: `factorial(${n}) / factorial(${n - k})`,
         x: T`Order matters: \(P(${n},${k}) = ${f.join(' \\cdot ')} = ${a}\).` };
     } },
     { id: 'dg-stars', skill: 'Counting', make(R) {
       const k = R.int(3, 5), n = R.int(5, 14), a = R.binom(n + k - 1, k - 1);
       const vars = Array.from({ length: k }, (_, i) => `x_${i + 1}`).join(' + ');
-      return { q: T`How many nonnegative integer solutions does \(${vars} = ${n}\) have?`, answer: a,
+      const q = R.pick([T`How many nonnegative integer solutions does \(${vars} = ${n}\) have?`, T`How many ways can ${n} identical cookies be shared among ${k} children, if a child may get none?`,
+        T`A shop sells ${k} flavors of donut. How many different boxes of ${n} donuts are possible?`, T`How many ways can ${n} identical coins be dropped into ${k} labeled jars?`]);
+      return { q, answer: a, v: `binomial(${n + k - 1}, ${k - 1})`,
         x: T`Stars and bars with \(n=${n}\), \(k=${k}\): \(\binom{${n}+${k}-1}{${k}-1} = \binom{${n + k - 1}}{${k - 1}} = ${a}\).` };
     } },
     { id: 'dg-modexp', skill: 'Number theory', make(R) {

@@ -219,6 +219,127 @@
     ]
   });
 
+  extendCard('discrete', 'Tautologies and contradictions', {
+    more: T`
+<h4>One row is enough to say "not a tautology"</h4>
+<p>To show a formula is a tautology you must check every row. To show it is <i>not</i>, one row where it is false is enough: a counterexample. Aim straight at that row. If the main connective is \(\to\), you need the left side T and the right side F; if it is \(\lor\), every part F; if it is \(\land\), any one part F.</p>
+<h4>Checking an argument</h4>
+<p>An argument with premises \(P_1, \dots, P_k\) and conclusion \(C\) is <b>valid</b> when no row makes every premise T and \(C\) F. Make one column per premise and one for the conclusion. Mark the rows where every premise is T, then look at \(C\) in those rows only. All T means valid; a single F is a counterexample.</p>
+<table class="tt"><tr><th>Form</th><th>Premises</th><th>Conclusion</th><th></th></tr>
+<tr><td>modus ponens</td><td>\(p\to q\), \(p\)</td><td>\(q\)</td><td>valid</td></tr>
+<tr><td>modus tollens</td><td>\(p\to q\), \(\neg q\)</td><td>\(\neg p\)</td><td>valid</td></tr>
+<tr><td>hypothetical syllogism</td><td>\(p\to q\), \(q\to r\)</td><td>\(p\to r\)</td><td>valid</td></tr>
+<tr><td>disjunctive syllogism</td><td>\(p\lor q\), \(\neg p\)</td><td>\(q\)</td><td>valid</td></tr>
+<tr><td>proof by cases</td><td>\(p\lor q\), \(p\to r\), \(q\to r\)</td><td>\(r\)</td><td>valid</td></tr>
+<tr><td>affirming the consequent</td><td>\(p\to q\), \(q\)</td><td>\(p\)</td><td>invalid</td></tr>
+<tr><td>denying the antecedent</td><td>\(p\to q\), \(\neg p\)</td><td>\(\neg q\)</td><td>invalid</td></tr></table>
+<p>The two invalid forms are the classic mistakes. They look like modus ponens and modus tollens run backward. Logical "or" is also inclusive, so "\(p\lor q\) and \(p\), therefore \(\neg q\)" is invalid: both may be true.</p>`,
+    exs: [
+      { q: T`Is this argument valid? "If it rains, then the field is wet. The field is wet. Therefore it rains."`, a: T`
+<p>Write \(p\) = "it rains" and \(q\) = "the field is wet". Premises \(P_1 = p\to q\), \(P_2 = q\); conclusion \(C = p\).</p>
+<table class="tt tv"><tr><th>\(p\)</th><th>\(q\)</th><th>\(P_1\)</th><th>\(P_2\)</th><th>\(C\)</th></tr>
+<tr><td>T</td><td>T</td><td><b>T</b></td><td><b>T</b></td><td><b>T</b></td></tr><tr><td>T</td><td>F</td><td>F</td><td>F</td><td>T</td></tr>
+<tr><td>F</td><td>T</td><td><b>T</b></td><td><b>T</b></td><td><b>F</b></td></tr><tr><td>F</td><td>F</td><td>T</td><td>F</td><td>F</td></tr></table>
+<p>Both premises are T in rows 1 and 3. In row 3 the conclusion is F: it does not rain, yet the field is wet (a sprinkler). That row is a counterexample, so the argument is invalid. This is affirming the consequent.</p>` },
+      { q: T`Find every assignment that makes \((p\to q)\to r\) false.`, a: T`
+<p>The main connective is \(\to\), so the formula is false exactly when its left side \(p\to q\) is T and \(r\) is F.</p>
+<p>\(p\to q\) is T in three of the four \((p, q)\) pairs: all except \(p\) T, \(q\) F. With \(r\) F, the false rows are \((p, q, r)\) = (T, T, F), (F, T, F), (F, F, F).</p>
+<p>Any one of them shows the formula is not a tautology.</p>` }
+    ],
+    vary: [
+      [T`Is "\(p\to q\), \(q\), therefore \(p\)" valid?`, ['Invalid', 'Valid'], T`Row \(p\) F, \(q\) T makes both premises T and the conclusion F.`],
+      [T`Is "\(p\to q\), \(\neg q\), therefore \(\neg p\)" valid?`, ['Valid', 'Invalid'], T`Modus tollens: the premises are both T only when \(p\) and \(q\) are F, and then \(\neg p\) is T.`],
+      [T`Is "\(p\lor q\), \(\neg p\), therefore \(q\)" valid?`, ['Valid', 'Invalid'], T`Disjunctive syllogism: with \(p\) F, the "or" needs \(q\).`],
+      [T`Is "\(p\lor q\), \(p\), therefore \(\neg q\)" valid?`, ['Invalid', 'Valid'], T`Row \(p\) T, \(q\) T: the premises hold and the conclusion fails.`],
+      [T`In how many rows is \((p\to q)\to r\) false?`, 3, T`\(r\) must be F and \(p\to q\) T, which holds for 3 of the 4 \((p, q)\) pairs.`],
+      [T`Which assignment makes \(p\to(q\lor r)\) false?`, [T`\(p\) T, \(q\) F, \(r\) F`, T`\(p\) F, \(q\) F, \(r\) F`, T`\(p\) T, \(q\) T, \(r\) F`], T`It needs \(p\) T and \(q\lor r\) F, so \(q\) and \(r\) both F.`]
+    ]
+  });
+
+  extendCard('discrete', 'Equivalences and negation', {
+    more: T`
+<h4>The laws in one place</h4>
+<table class="tt"><tr><th>Law</th><th>Equivalence</th></tr>
+<tr><td>implication as "or"</td><td>\(p\to q \equiv \neg p\lor q\)</td></tr>
+<tr><td>contrapositive</td><td>\(p\to q \equiv \neg q\to\neg p\)</td></tr>
+<tr><td>De Morgan</td><td>\(\neg(p\land q) \equiv \neg p\lor\neg q\)<br>\(\neg(p\lor q) \equiv \neg p\land\neg q\)</td></tr>
+<tr><td>negated implication</td><td>\(\neg(p\to q) \equiv p\land\neg q\)</td></tr>
+<tr><td>distributive</td><td>\(p\land(q\lor r) \equiv (p\land q)\lor(p\land r)\)<br>\(p\lor(q\land r) \equiv (p\lor q)\land(p\lor r)\)</td></tr>
+<tr><td>biconditional</td><td>\(p\leftrightarrow q \equiv (p\to q)\land(q\to p)\)</td></tr>
+<tr><td>double negation</td><td>\(\neg\neg p \equiv p\)</td></tr></table>
+<p>The letters stand for any statements, including compound ones. \(\neg(r\land s)\lor t\) is the "implication as or" pattern with \(p = r\land s\) and \(q = t\), so it equals \((r\land s)\to t\).</p>
+<p>To test a claimed equivalence, build both truth tables over the same letters and compare the final columns. One row where they differ settles it.</p>
+<h4>Negating step by step</h4>
+<p>Work from the outside in, applying one law at a time, until every \(\neg\) sits on a single letter. The main connective tells you which law to use first.</p>
+<h4>Converse, inverse, contrapositive of compound statements</h4>
+<p>The definitions treat the hypothesis \(A\) and conclusion \(B\) as whole blocks. For \((p\land q)\to r\): \(A = p\land q\) and \(B = r\), so the converse is \(r\to(p\land q)\), the inverse \(\neg(p\land q)\to\neg r\), and the contrapositive \(\neg r\to\neg(p\land q)\).</p>`,
+    exs: [
+      { q: T`Negate \(p\to(q\land r)\) and simplify.`, a: T`
+<p>The main connective is \(\to\), so use the negated implication first, then De Morgan:</p>
+\[\begin{aligned}\neg\big(p\to(q\land r)\big) &\equiv p\land\neg(q\land r)\\ &\equiv p\land(\neg q\lor\neg r)\end{aligned}\]
+<p>In words: "\(p\) holds, and \(q\) or \(r\) fails."</p>` },
+      { q: T`Is \(p\to(q\to r)\) equivalent to \((p\to q)\to r\)?`, a: T`
+<p>Look for a row where they differ. Take \(p\), \(q\), \(r\) all F. The left side: \(q\to r\) is T, so \(p\to(\mathrm T)\) is T. The right side: \(p\to q\) is T, and \(\mathrm T\to\mathrm F\) is F.</p>
+<p>They differ in that row, so they are not equivalent: implication is not associative.</p>` }
+    ],
+    vary: [
+      [T`Which is the negation of \(p\to(q\land r)\)?`, [T`\(p\land(\neg q\lor\neg r)\)`, T`\(\neg p\to(\neg q\land\neg r)\)`, T`\(p\land\neg q\land\neg r\)`], T`Negated implication, then De Morgan on \(q\land r\).`],
+      [T`What is the converse of \((p\land q)\to r\)?`, [T`\(r\to(p\land q)\)`, T`\(\neg r\to\neg(p\land q)\)`, T`\(\neg(p\land q)\to\neg r\)`], T`Swap the whole hypothesis and conclusion.`],
+      [T`Which is equivalent to \(p\leftrightarrow q\)?`, [T`\((p\to q)\land(q\to p)\)`, T`\((p\to q)\lor(q\to p)\)`, T`\(p\land q\)`], T`"If and only if" is an implication in each direction.`],
+      [T`Which is equivalent to \(p\land(q\lor r)\)?`, [T`\((p\land q)\lor(p\land r)\)`, T`\((p\land q)\lor r\)`, T`\((p\lor q)\land(p\lor r)\)`], T`Distribute \(p\land\) over each part of the "or".`],
+      [T`Which is equivalent to \(\neg p\lor q\)?`, [T`\(p\to q\)`, T`\(q\to p\)`, T`\(\neg p\to\neg q\)`], T`The "implication as or" law read right to left.`]
+    ]
+  });
+
+  extendCard('discrete', 'Proof strategies', {
+    more: T`
+<h4>Searching for a counterexample</h4>
+<p>For a claim "\(f(n)\) is prime for every \(n \ge n_0\)", test \(n_0, n_0 + 1, n_0 + 2, \dots\) in order and stop at the first value with a factor. To test whether a number is prime, try dividing by the primes up to its square root.</p>
+<p>Many such formulas survive several tests before failing, which is why a list of examples never proves a "for all" claim.</p>`,
+    exs: [{ q: T`Find the smallest counterexample \(n \ge 1\) to "\(2^n + 15\) is prime for every \(n \ge 1\)".`, a: T`
+<p>\(n = 1, \dots, 6\) give 17, 19, 23, 31, 47, 79, all prime.</p>
+<p>\(n = 7\) gives \(128 + 15 = 143 = 11\cdot 13\). The counterexample is \(n = 7\).</p>` }],
+    vary: [
+      [T`Smallest \(n \ge 1\) for which \(6n + 1\) is not prime?`, 4, T`7, 13, 19 are prime; \(6\cdot4 + 1 = 25 = 5\cdot5\).`],
+      [T`Smallest \(n \ge 0\) for which \(n! + 1\) is not prime?`, 4, T`2, 2, 3, 7 are prime; \(4! + 1 = 25\).`],
+      [T`Smallest \(n \ge 1\) for which \(2^n + 9\) is not prime?`, 4, T`11, 13, 17 are prime; \(16 + 9 = 25\).`]
+    ]
+  });
+
+  extendCard('discrete', 'Pigeonhole principle', {
+    more: T`
+<h4>The two standard questions</h4>
+<p><b>How many guarantee \(k\) in one box?</b> With \(m\) boxes, \(m(k - 1)\) objects can sit \(k - 1\) to a box without reaching \(k\). One more forces it: \(m(k - 1) + 1\).</p>
+<p><b>Given \(N\) objects, how many must share a box?</b> At least \(\lceil N/m \rceil\). If every box held \(\lceil N/m \rceil - 1\) or fewer, the total would fall short of \(N\). An even spread shows you cannot promise more.</p>`,
+    exs: [{ q: T`50 people are in a room. What is the largest number you can be sure share a birth month?`, a: T`
+<p>Twelve months are the boxes: \(\lceil 50/12 \rceil = \lceil 4.17 \rceil = 5\).</p>
+<p>Check: if no month had 5 people, there would be at most \(12\cdot4 = 48 < 50\). And a spread of 5, 5, 4, ..., 4 shows that 6 is not guaranteed.</p>` }],
+    vary: [
+      [T`50 people: at least how many share a birth month?`, 5, T`\(\lceil 50/12 \rceil\).`],
+      [T`100 integers: at least how many share a last digit?`, 10, T`\(\lceil 100/10 \rceil\): ten digits are the boxes.`],
+      [T`How many cards guarantee 4 of the same suit?`, 13, T`\(4\cdot3 + 1\).`]
+    ]
+  });
+
+  extendCard('discrete', 'Growth of functions', {
+    more: T`
+<h4>Ranking functions</h4>
+<p>Compare by type first: logarithms, then powers of \(n\), then exponentials, then \(n!\), then \(n^n\). Within a type:</p>
+<p>Powers: the larger exponent wins, however small the gap (\(n^{2.1}\) beats \(n^2\log n\)). A \(\log n\) factor counts for more than nothing and less than any power, so \(n^2 \prec n^2\log n \prec n^{2.5}\).</p>
+<p>Exponentials: the larger base wins (\(2^n \prec 3^n\)), and every base above 1 eventually beats every power (\(n^{100} \prec 1.1^n\)).</p>
+<h4>Tight bounds for sums</h4>
+<p>For a sum of terms, \(\Theta\) of the whole is \(\Theta\) of its fastest-growing term. Drop the other terms and the constant factor.</p>`,
+    exs: [{ q: T`Find a tight bound for \(f(n) = 7 + 5n\log n + 3n^2\).`, a: T`
+<p>The terms are \(7\) (constant), \(5n\log n\), and \(3n^2\). On the ladder \(1 \prec n\log n \prec n^2\), so \(3n^2\) dominates.</p>
+<p>Dropping the constant 3: \(f(n) = \Theta(n^2)\).</p>` }],
+    vary: [
+      [T`Tight bound for \(4n\log n + n^2 + 9\)?`, [T`\(\Theta(n^2)\)`, T`\(\Theta(n\log n)\)`, T`\(\Theta(n^2\log n)\)`], T`\(n^2\) is the fastest term.`],
+      [T`Which grows faster?`, [T`\(n^3\)`, T`\(n^2\log n\)`], T`\(\log n\) grows slower than any power, including \(n\).`],
+      [T`Which grows faster?`, [T`\(1.1^n\)`, T`\(n^{100}\)`], T`Any exponential with base above 1 beats any power eventually.`],
+      [T`Tight bound for \(2^n + n^{3}\)?`, [T`\(\Theta(2^n)\)`, T`\(\Theta(n^3)\)`, T`\(\Theta(2^n n^3)\)`], T`The exponential term dominates.`]
+    ]
+  });
+
   extendCard('discrete', 'Counting principles', {
     more: T`
 <h4>Stars and bars</h4>

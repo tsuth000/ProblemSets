@@ -41,9 +41,10 @@
   function buildUnitSet(sid, card, len) {
     const gens = unitGens(sid, card.title), stat = R.shuffle(unitItems(sid, card.title).filter(i => i.kind === 'static'));
     const list = [], nStatic = gens.length ? Math.min(stat.length, Math.floor(len / 4)) : Math.min(stat.length, len);
-    for (const it of stat.slice(0, nStatic)) { const inst = instantiate(it); if (inst) list.push(inst); }
+    const seen = new Set();
+    for (const it of stat.slice(0, nStatic)) { const inst = fresh(it, seen); if (inst) list.push(inst); }
     let bag = []; let guard = 0;
-    while (list.length < len && gens.length && guard++ < 100) { if (!bag.length) bag = R.shuffle(gens.slice()); const inst = instantiate(bag.pop()); if (inst) list.push(inst); }
+    while (list.length < len && gens.length && guard++ < 100) { if (!bag.length) bag = R.shuffle(gens.slice()); const inst = fresh(bag.pop(), seen); if (inst) list.push(inst); }
     return R.shuffle(list);
   }
   const complete = (sid, card) => { const u = Game.unit(sid, card.title); return hasCheck(sid, card) ? u.stars >= 2 : u.stars >= 1; };
@@ -58,6 +59,19 @@
   }
 
   // ---------- Question instances ----------
+  // A question's identity for duplicate checks: its text plus any code block.
+  const qKey = inst => inst.q + '\u0000' + (inst.code || '');
+  // Instantiates an item that is not already in the set, redrawing a generator up to eight times.
+  function fresh(item, seen) {
+    for (let t = 0; t < 8; t++) {
+      const inst = instantiate(item);
+      if (!inst) return null;
+      if (!seen.has(qKey(inst))) { seen.add(qKey(inst)); return inst; }
+      if (item.kind !== 'gen') return null;
+    }
+    return null;
+  }
+  const dedupe = list => { const seen = new Set(); return list.filter(i => !seen.has(qKey(i)) && seen.add(qKey(i))); };
   function instantiate(item) {
     const subj = subjById(item.subject);
     let base;
@@ -93,7 +107,7 @@
       return w;
     };
     const target = opts.missed ? Math.min(len, pool.length) : len;
-    const picks = [];
+    const picks = [], seen = new Set();
     let avail = pool.slice(), guard = 0;
     while (picks.length < target && pool.length && guard++ < 200) {
       if (!avail.length) avail = pool.filter(i => i.kind === 'gen');
@@ -101,7 +115,7 @@
       const ws = avail.map(weight), total = ws.reduce((a, b) => a + b, 0);
       let r = Math.random() * total, k = 0;
       while (k < avail.length - 1 && (r -= ws[k]) > 0) k++;
-      const inst = instantiate(avail[k]);
+      const inst = fresh(avail[k], seen);
       avail.splice(k, 1);
       if (inst) picks.push(inst);
     }
@@ -122,7 +136,7 @@
       const opts = studied.size ? { units: studied } : { subject: S().settings.lastSubject || 'algebra' };
       for (const inst of buildSession(Object.assign(opts, { len: 8 - list.length })).list) list.push(inst);
     }
-    return { opts: { mode: 'today' }, list: R.shuffle(list), i: 0, xp0: S().xp };
+    return { opts: { mode: 'today' }, list: R.shuffle(dedupe(list)), i: 0, xp0: S().xp };
   }
 
   function parseNum(raw) {

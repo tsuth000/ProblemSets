@@ -110,3 +110,13 @@ Each subject lives in assets/js/subjects/<name>.js.
 - Discrete, "Propositions and truth tables": new notes on reading a formula (precedence and the main connective) and three ways to count the rows where a statement is true: the full table built inside out, shortcuts that count false rows for "or" and "if-then", and splitting on one letter. Three worked examples with full tables, including p ∨ (q ∧ r) and ((p → q) ∧ p) → q, and six "Your turn" problems.
 - `du-count` explanations now name each inner piece, show the complete truth table with every intermediate column, count the true rows, and give the shortcut for that formula. `du-eval` substitutes the given values one piece at a time. `du-taut` shows the table behind its classification.
 - Truth tables in explanations are centered and sized for phone width.
+
+## Version 1.22: discrete question variety
+
+- No repeated questions: unit checks, practice sessions and Today's session now redraw a generator when it produces a question already in the set.
+- New shared logic engine (`js/logic.js`): formulas as trees, with LaTeX, evaluation, Python for verification, inside-out truth tables, counting shortcuts, negation normal form and one-edit mutations for distractors.
+- Discrete, "Tautologies and contradictions": three generators instead of one. `du-taut` draws from 43 templates (named laws, contradictions, common fallacies) with random substitutions; `du-falsify` asks which assignment makes a formula false; `du-valid` asks whether an argument is valid, in symbols or in plain English, and shows the premise/conclusion table with the counterexample row. Notes on counterexample rows, checking arguments, and a table of valid and invalid argument forms; two worked examples and six problems.
+- Discrete, "Equivalences and negation": `du-equiv` now uses nine law patterns with substitutions and mistake-based distractors; new `du-negate` (symbolic and English) and `du-cic` (converse, inverse, contrapositive of compound statements). Notes collect the laws in one table; two worked examples and five problems.
+- Discrete, "Propositions and truth tables": `du-count` and `du-eval` add random formulas, with a computed shortcut from the main connective.
+- Proof strategies: counterexample claims from five families (quadratics, linear forms, 2^n + k, n! + 1, Euler's n² − 79n + 1601), with the factorization shown. Pigeonhole: ten settings and a second question type (⌈N/m⌉). Growth: new `du-order` (ranking) and `du-theta` (tight bound of a sum). Counting: several wordings per generator, now with verification checks. Lessons extended to teach each new question type.
+- `tools/verify.py`: `equivn`, `faster`, `theta` helpers.

@@ -224,12 +224,17 @@
   const rowOrder = n => (n === 1 ? 'T then F' : n === 2 ? T`\(p\) in blocks of 2, \(q\) alternating` : T`\(p\) in blocks of 4, \(q\) in blocks of 2, \(r\) alternating`);
   const evalSteps = (tex, vals) => { const e = runRow(tex, vals), sub = k => T`\mathrm{${TV(e[k])}}`;
     return STEPS[tex][0].map(([nm, t]) => T`<p>\(${nm} = ${fillT(t, k => k)} = ${fillT(t, sub)} = \mathrm{${TV(e[nm])}}\)</p>`).join(''); };
-  const classify = (f, n) => { const v = rowsOf(n).map(r => f(...r)); return v.every(Boolean) ? 'tautology' : v.some(Boolean) ? 'contingency' : 'contradiction'; };
-  const TWO = [['\\neg p\\lor q', (p, q) => !p || q, '(not p) or q'], ['\\neg q\\to\\neg p', (p, q) => q || !p, 'q or (not p)'], ['q\\to p', (p, q) => !q || p, '(not q) or p'], ['\\neg p\\to\\neg q', (p, q) => p || !q, 'p or (not q)'],
-    ['p\\land\\neg q', (p, q) => p && !q, 'p and (not q)'], ['\\neg p\\land\\neg q', (p, q) => !p && !q, '(not p) and (not q)'], ['\\neg p\\lor\\neg q', (p, q) => !p || !q, '(not p) or (not q)'], ['\\neg(p\\land q)', (p, q) => !(p && q), 'not (p and q)'],
-    ['\\neg(p\\lor q)', (p, q) => !(p || q), 'not (p or q)'], ['p\\lor q', (p, q) => p || q, 'p or q'], ['p\\land q', (p, q) => p && q, 'p and q'], ['p\\to q', (p, q) => !p || q, '(not p) or q'],
-    ['(p\\to q)\\land(q\\to p)', (p, q) => (!p || q) && (!q || p), '((not p) or q) and ((not q) or p)'], ['p\\leftrightarrow q', (p, q) => p === q, 'p == q'], ['\\neg(p\\leftrightarrow q)', (p, q) => p !== q, 'p != q']];
-  const sig = f => rowsOf(2).map(r => (f(...r) ? 1 : 0)).join('');
+  // Random formulas from js/logic.js widen the pool beyond the named forms above.
+  const LG = window.Logic;
+  const treeForm = R => LG.random(R, R.pick([['p', 'q'], ['p', 'q', 'r'], ['p', 'q', 'r']]), R.int(2, 3));
+  const evalTree = R => { const f = treeForm(R), vs = LG.varsOf(f), row = R.pick(LG.rowsOver(vs)), out = LG.ev(f, row);
+    return { q: T`With ${vs.map(v => T`\(${v}\) ${tv(row[v])}`).join(', ')}, is \(${LG.tex(f)}\) true or false?`, c: out ? ['True', 'False'] : ['False', 'True'],
+      x: T`<p>Name the pieces from the inside out: ${LG.defs(f)}. Then substitute the given values one piece at a time.</p>${LG.steps(f, row)}<p>So the statement is ${tv(out)}.</p>`,
+      key: out ? 'True' : 'False', vk: `str(bool(${LG.lambda(f)}(*${LG.rowTuple(vs, row)})))` }; };
+  const countTree = R => { const f = treeForm(R), vs = LG.varsOf(f), n = vs.length, cnt = LG.trueRows(f);
+    return { q: T`In how many rows of its truth table is \(${LG.tex(f)}\) true?`, answer: cnt,
+      x: T`<p>1. Name the pieces from the inside out: ${LG.defs(f)}.</p><p>2. List all \(2^${n} = ${2 ** n}\) rows (${rowOrder(n)}) and fill each column from the ones before it.</p>${LG.table(f)}<p>3. Count the T entries in column \(S\): ${cnt}.</p><p>Shortcut: ${LG.shortcut(f)}</p>`,
+      v: `sum(1 for vv in product([True, False], repeat=${n}) if ${LG.lambda(f)}(*vv))` }; };
   const isPrime = m => { if (m < 2) return false; for (let d = 2; d * d <= m; d++) if (m % d === 0) return false; return true; };
   const tv = b => (b ? 'true' : 'false');
 
@@ -237,22 +242,13 @@
     tag: { 'dg-comb': 'Counting principles', 'dg-perm': 'Counting principles', 'dg-stars': 'Counting principles', 'dg-modexp': 'Divisibility and modular arithmetic', 'dg-gcd': 'Divisibility and modular arithmetic', 'dg-incl': 'Inclusion–exclusion' },
     units: {
       'Propositions and truth tables': [
-        { id: 'du-eval', make(R) { const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), vals = Array.from({ length: n }, () => R.pick(TF)), out = f(...vals);
+        { id: 'du-eval', make(R) { if (R.int(0, 1)) return evalTree(R); const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), vals = Array.from({ length: n }, () => R.pick(TF)), out = f(...vals);
           const names = ['p', 'q', 'r'].slice(0, n);
           return { q: T`With ${names.map((v, i) => `\\(${v}\\) ${tv(vals[i])}`).join(', ')}, is \(${tex}\) true or false?`, c: out ? ['True', 'False'] : ['False', 'True'],
             x: T`<p>Name the pieces from the inside out: ${defsOf(tex)}. Then substitute the given values one piece at a time.</p>${evalSteps(tex, vals)}<p>So the statement is ${tv(out)}.</p>`, key: out ? 'True' : 'False', vk: `str(bool((lambda p, q=False, r=False: ${py})(${vals.map(b => (b ? 'True' : 'False')).join(', ')})))` }; } },
-        { id: 'du-count', make(R) { const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), cnt = rowsOf(n).filter(r => f(...r)).length;
+        { id: 'du-count', make(R) { if (R.int(0, 1)) return countTree(R); const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), cnt = rowsOf(n).filter(r => f(...r)).length;
           return { q: T`In how many rows of its truth table is \(${tex}\) true?`, answer: cnt, x: T`<p>1. Name the pieces from the inside out: ${defsOf(tex)}.</p><p>2. List all \(2^${n} = ${2 ** n}\) rows (${rowOrder(n)}) and fill each column from the ones before it.</p>${truthTable(tex, n)}<p>3. Count the T entries in column \(S\): ${cnt}.</p><p>Shortcut: ${STEPS[tex][1]}</p>`,
             v: `sum(1 for vv in product([True, False], repeat=${n}) if (lambda p, q=False, r=False: ${py})(*vv))` }; } }
-      ],
-      'Tautologies and contradictions': [
-        { id: 'du-taut', make(R) { const [tex, f, py, n] = R.pick(FORMS), k = classify(f, n), others = ['tautology', 'contradiction', 'contingency'].filter(z => z !== k);
-          return { q: T`Classify \(${tex}\).`, c: [k, ...others], x: T`<p>Name the pieces: ${defsOf(tex)}. Fill in every row.</p>${truthTable(tex, n)}<p>Column \(S\) is ${k === 'tautology' ? 'all T' : k === 'contradiction' ? 'all F' : 'a mix of T and F'}, so it is a ${k}.</p>`, key: k, vk: `cls(lambda p, q=False, r=False: ${py}, ${n})` }; } }
-      ],
-      'Equivalences and negation': [
-        { id: 'du-equiv', make(R) { let t, eq, non; do { t = R.pick(TWO); eq = TWO.filter(o => o !== t && sig(o[1]) === sig(t[1])); non = TWO.filter(o => sig(o[1]) !== sig(t[1])); } while (!eq.length || non.length < 3);
-          const good = R.pick(eq), bad = R.shuffle(non).slice(0, 3);
-          return { q: T`Which formula is logically equivalent to \(${t[0]}\)?`, c: [T`\(${good[0]}\)`, ...bad.map(b => T`\(${b[0]}\)`)], x: T`Their truth tables match in every row.`, key: 'True', vk: `str(equiv(lambda p, q: ${t[2]}, lambda p, q: ${good[2]}))` }; } }
       ],
       'Quantifiers': [
         { id: 'du-quant', make(R) { const n = R.int(4, 9), k = R.int(2, 30), m = R.pick([12, 18, 24, 30, 36]);
@@ -263,9 +259,23 @@
             key: out ? 'True' : 'False', vk: `str(${all ? 'all' : 'any'}(${ppy} for x in range(1, ${n + 1})))` }; } }
       ],
       'Proof strategies': [
-        { id: 'du-counter', make(R) { const p = R.pick([5, 11, 17, 41]), plus = R.int(0, 1) === 1, f = m => m * m + (plus ? m : -m) + p; let m = 0; while (isPrime(f(m))) m++;
-          return { q: T`Find the smallest counterexample \(n \ge 0\) to "\(n^2 ${plus ? '+' : '-'} n + ${p}\) is prime for every \(n\)".`, answer: m,
-            x: T`Test \(n = 0, 1, 2, \dots\): every value is prime until \(n = ${m}\), which gives \(${f(m)}\), not prime. One counterexample disproves a "for all" claim.`, v: `next(m for m in range(0, 200) if not isprime(m*m ${plus ? '+' : '-'} m + ${p}))` }; } }
+        { id: 'du-counter', make(R) {
+          // Claims of the form "f(n) is prime for every n >= start"; the answer is the first n where f(n) is composite.
+          const FAM = [
+            () => { const p = R.pick([5, 11, 17, 41]), plus = R.int(0, 1) === 1; return [T`n^2 ${plus ? '+' : '-'} n + ${p}`, m => m * m + (plus ? m : -m) + p, `m*m ${plus ? '+' : '-'} m + ${p}`, 0]; },
+            () => { let a, b; do { a = R.pick([2, 4, 6, 8, 10, 12, 14, 18, 20, 24, 30]); b = R.pick([3, 5, 7, 11, 13, 17, 19, 23, 29, 31]); } while (R.gcd(a, b) !== 1); return [`${a}n + ${b}`, m => a * m + b, `${a}*m + ${b}`, 0]; },
+            () => { const k = R.pick([3, 9, 15, 21, 27, 45, 57, 81, 99, 105]); return [`2^n + ${k}`, m => 2 ** m + k, `2**m + ${k}`, 1]; },
+            () => ['n! + 1', m => fact(m) + 1, 'factorial(m) + 1', 0],
+            () => ['n^2 - 79n + 1601', m => m * m - 79 * m + 1601, 'm*m - 79*m + 1601', 0]];
+          for (;;) {
+            const [tex, f, py, start] = R.pick(FAM)(); let m = start; while (isPrime(f(m))) m++;
+            if (m < start + 2) continue;
+            const val = f(m); let d = 2; while (val % d) d++;
+            const shown = m - start <= 7 ? T`the values ${Array.from({ length: m - start }, (_, i) => f(start + i)).join(', ')} are all prime` : T`the values for \(n = ${start}\) through \(${m - 1}\) are all prime`;
+            return { q: T`Find the smallest counterexample \(n \ge ${start}\) to "\(${tex}\) is prime for every \(n \ge ${start}\)".`, answer: m,
+              x: T`Test \(n = ${start}, ${start + 1}, ${start + 2}, \dots\) in order: ${shown}. At \(n = ${m}\) the value is \(${val} = ${d}\cdot${val / d}\), not prime. One counterexample disproves a "for all" claim.`,
+              v: `next(m for m in range(${start}, 200) if not isprime(${py}))` };
+          } } }
       ],
       'Mathematical induction': [
         { id: 'du-sum', make(R) { const k = R.int(0, 3), n = R.int(5, 40);
@@ -281,7 +291,7 @@
           return { q: T`\(A = \{${A.join(', ')}\}\), \(B = \{${B.join(', ')}\}\). Find \(|A ${{ cup: '\\cup', cap: '\\cap', minus: '-' }[op]} B|\).`, answer: S.length,
             x: T`\(A ${{ cup: '\\cup', cap: '\\cap', minus: '-' }[op]} B = \{${S.sort((a, b) => a - b).join(', ')}\}\), which has ${S.length} element${S.length === 1 ? '' : 's'}.`,
             v: `len(set([${A}]) ${{ cup: '|', cap: '&', minus: '-' }[op]} set([${B}]))` }; } },
-        { id: 'du-funcs', make(R) { const m = R.int(1, 4), n = R.int(1, 5), inj = R.int(0, 1) === 1; let val = inj ? (n >= m ? fact(n) / fact(n - m) : 0) : n ** m;
+        { id: 'du-funcs', make(R) { const m = R.int(1, 5), n = R.int(1, 6), inj = R.int(0, 1) === 1; let val = inj ? (n >= m ? fact(n) / fact(n - m) : 0) : n ** m;
           return { q: T`How many ${inj ? 'one-to-one ' : ''}functions are there from a ${m}-element set to a ${n}-element set?`, answer: val,
             x: inj ? (n >= m ? T`The first input has ${n} choices, the next ${n - 1}, and so on: \(${Array.from({ length: m }, (_, i) => n - i).join('\\cdot')} = ${val}\).` : T`There are more inputs than outputs, so two inputs must share: none.`) : T`Each of the ${m} inputs independently picks one of ${n} outputs: \(${n}^{${m}} = ${val}\).`,
             v: `sum(1 for f in product(range(${n}), repeat=${m})${inj ? ` if len(set(f)) == ${m}` : ''})` }; } }
@@ -302,9 +312,16 @@
             x: T`Choose \(${R.co(a)}x\) from ${k} of the ${n} brackets: \(\binom{${n}}{${k}}(${a})^{${k}}(${b})^{${n - k}} = ${C}\cdot${a ** k}\cdot${b ** (n - k)} = ${val}\).`, v: `Poly(expand((${a}*x + (${b}))**${n}), x).coeff_monomial(x**${k})` }; } }
       ],
       'Pigeonhole principle': [
-        { id: 'du-pigeon', make(R) { const [m, things, holes] = R.pick([[12, 'people', 'birth months'], [7, 'people', 'days of the week'], [5, 'socks', 'colors'], [10, 'integers', 'last digits'], [4, 'cards', 'suits']]), k = R.int(2, 5);
-          return { q: T`There are ${m} ${holes}. How many ${things} guarantee that at least ${k} share one?`, answer: m * (k - 1) + 1,
-            x: T`With \(${m}\cdot${k - 1} = ${m * (k - 1)}\) you could have exactly ${k - 1} in each. One more forces ${k} somewhere: ${m * (k - 1) + 1}.`, v: `min(N for N in range(1, 1000) if -(-N // ${m}) >= ${k})` }; } }
+        { id: 'du-pigeon', make(R) {
+          const [m, things, hole, holes] = R.pick([[12, 'people', 'birth month', 'birth months'], [7, 'people', 'birth weekday', 'weekdays'], [5, 'socks', 'color', 'colors'], [3, 'marbles', 'color', 'colors'],
+            [10, 'integers', 'last digit', 'last digits'], [4, 'cards', 'suit', 'suits'], [26, 'words', 'first letter', 'first letters'], [24, 'calls', 'starting hour', 'hours'], [6, 'die rolls', 'face', 'faces'], [13, 'cards', 'rank', 'ranks']]);
+          if (R.int(0, 1)) { const k = R.int(2, 6);
+            return { q: T`There are ${m} possible ${holes}. How many ${things} guarantee that at least ${k} share the same ${hole}?`, answer: m * (k - 1) + 1,
+              x: T`With \(${m}\cdot${k - 1} = ${m * (k - 1)}\) ${things} you could have exactly ${k - 1} for each ${hole}. One more forces ${k} somewhere: \(${m * (k - 1)} + 1 = ${m * (k - 1) + 1}\).`, v: `min(N for N in range(1, 5000) if -(-N // ${m}) >= ${k})` }; }
+          let N; do { N = R.int(m + 1, 6 * m); } while (N % m === 0 && R.int(0, 2));
+          const c = Math.ceil(N / m);
+          return { q: T`There are ${N} ${things}, each with one of ${m} possible ${holes}. What is the largest number you can be sure share the same ${hole}?`, answer: c,
+            x: T`Pigeonhole: some ${hole} has at least \(\lceil ${N}/${m} \rceil = ${c}\). If every ${hole} had at most ${c - 1}, there would be at most \(${m}\cdot${c - 1} = ${m * (c - 1)} < ${N}\). And an even spread reaches exactly ${c}, so you cannot promise more.`, v: `-(-${N} // ${m})` }; } }
       ],
       'Divisibility and modular arithmetic': [
         { id: 'du-modarith', make(R) { const m = R.int(3, 13), a = R.int(-40, 60), b = R.int(2, 40), c = R.int(-20, 20), val = (((a * b + c) % m) + m) % m;
@@ -323,9 +340,29 @@
             x: T`Step forward: \(${(() => { let s = a0, out = [a0]; for (let i = 0; i < k; i++) { s = p * s + q; out.push(s); } return out.join(',\\ '); })()}\).`, v: `reduce(lambda a, _: ${p}*a + (${q}), range(${k}), ${a0})` }; } }
       ],
       'Growth of functions': [
-        { id: 'du-growth', make(R) { const k = R.int(1, 3), c = R.pick([2, 3, 10]);
+        { id: 'du-growth', make(R) { const k = R.int(1, 3), c = R.pick([2, 3, 4, 5, 10]);
           return { q: T`An \(O(${k === 1 ? 'n' : `n^{${k}}`})\) algorithm takes 1 second on some input. About how many seconds on an input ${c} times larger?`, answer: c ** k,
-            x: k === 1 ? T`Linear time scales with the input: \(${c}\) times the input takes \(${c}\) times as long.` : T`\((${c}n)^{${k}} = ${c}^{${k}}n^{${k}}\): \(${c ** k}\) times as long.`, v: `simplify((${c}*y)**${k}/y**${k})` }; } }
+            x: k === 1 ? T`Linear time scales with the input: \(${c}\) times the input takes \(${c}\) times as long.` : T`\((${c}n)^{${k}} = ${c}^{${k}}n^{${k}}\): \(${c ** k}\) times as long.`, v: `simplify((${c}*y)**${k}/y**${k})` }; } },
+        { id: 'du-order', make(R) {
+          // Listed slowest to fastest; the index is the growth rank.
+          const H = [['\\log n', 'log(n)'], ['(\\log n)^2', 'log(n)**2'], ['\\sqrt n', 'sqrt(n)'], ['n', 'n'], ['n\\log n', 'n*log(n)'], ['n^{1.5}', 'n**Rational(3, 2)'], ['n^2', 'n**2'], ['n^2\\log n', 'n**2*log(n)'],
+            ['n^3', 'n**3'], ['n^{100}', 'n**100'], ['1.1^n', 'Rational(11, 10)**n'], ['2^n', '2**n'], ['3^n', '3**n'], ['n!', 'factorial(n)'], ['n^n', 'n**n']];
+          const idx = R.sample(H.map((_, i) => i), 4), fast = R.int(0, 1) === 1, best = fast ? Math.max(...idx) : Math.min(...idx), rest = idx.filter(i => i !== best);
+          const order = idx.slice().sort((a, b) => a - b).map(i => H[i][0]).join(' \\prec ');
+          return { q: T`Which grows ${fast ? 'fastest' : 'slowest'} as \(n \to \infty\)?`, c: [best, ...rest].map(i => T`\(${H[i][0]}\)`),
+            x: T`<p>Order them on the growth ladder: logarithms, then powers of \(n\) (smaller exponent first, a \(\log n\) factor counts for less than any power), then exponentials (smaller base first), then \(n!\), then \(n^n\).</p><p>\(${order}\)</p><p>The ${fast ? 'fastest' : 'slowest'} is \(${H[best][0]}\).</p>`,
+            key: 'True', vk: `str(all([${rest.map(i => (fast ? `faster(lambda n: ${H[best][1]}, lambda n: ${H[i][1]})` : `faster(lambda n: ${H[i][1]}, lambda n: ${H[best][1]})`)).join(', ')}]))` }; } },
+        { id: 'du-theta', make(R) {
+          const G = [['1', '1'], ['\\log n', 'log(n)'], ['\\sqrt n', 'sqrt(n)'], ['n', 'n'], ['n\\log n', 'n*log(n)'], ['n^2', 'n**2'], ['n^2\\log n', 'n**2*log(n)'], ['n^3', 'n**3'], ['2^n', '2**n']];
+          const idx = R.sample(G.map((_, i) => i), 3), top = Math.max(...idx), co = idx.map(() => R.int(1, 9));
+          const term = (i, c) => (G[i][0] === '1' ? String(c) : `${c === 1 ? '' : c}${G[i][0]}`), f = idx.map((i, j) => term(i, co[j])).join(' + ');
+          const fpy = idx.map((i, j) => `${co[j]}*(${G[i][1]})`).join(' + ');
+          const pool = [...new Set(idx.filter(i => i !== top).concat([Math.min(top + 1, G.length - 1), top - 1]).filter(i => i !== top && i >= 0))];
+          const wrong = R.shuffle(pool).slice(0, 3);
+          let extra = 0; while (wrong.length < 3) { if (extra !== top && !wrong.includes(extra)) wrong.push(extra); extra++; }
+          return { q: T`What is the tight bound for \(f(n) = ${f}\)?`, c: [top, ...wrong].map(i => T`\(\Theta(${G[i][0]})\)`),
+            x: T`<p>Keep the fastest-growing term and drop its constant: the other terms are lower order, so for large \(n\) they are a vanishing fraction of \(f(n)\).</p><p>The fastest term is \(${term(top, co[idx.indexOf(top)])}\), so \(f(n) = \Theta(${G[top][0]})\).</p>`,
+            key: 'True', vk: `str(theta(lambda n: ${fpy}, lambda n: ${G[top][1]}) and not any([${wrong.map(i => `theta(lambda n: ${fpy}, lambda n: ${G[i][1]})`).join(', ')}]))` }; } },
       ]
     }
   });
