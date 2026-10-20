@@ -239,9 +239,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- Concept notes: tables, worked examples, mistakes ---------- */
 .tabs button { flex: 1; padding-left: 8px; padding-right: 8px; }
-.concept .tt { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 15px; display: block; overflow-x: auto; }
+.concept .tt, .explain .tt { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 15px; display: block; overflow-x: auto; }
 .tt th, .tt td { border: 1px solid var(--rule); padding: 5px 6px; text-align: left; vertical-align: top; }
 .tt th { background: var(--paper-2); font: 700 14px var(--ui); }
+.tt { border-collapse: collapse; }
+.tt.tv { width: auto; }
+.tt.tv th, .tt.tv td { text-align: center; min-width: 30px; }
 .worked {
   margin: 16px 0 12px; padding: 12px 14px 4px; border: 1px solid var(--rule); border-radius: 2px;
   background-color: var(--paper-2);

@@ -169,6 +169,56 @@
   });
 
   // ======================= DISCRETE =======================
+  extendCard('discrete', 'Propositions and truth tables', {
+    more: T`
+<h4>Reading a formula: which connective is last?</h4>
+<p>Without parentheses, \(\neg\) applies first, then \(\land\), then \(\lor\), then \(\to\) and \(\leftrightarrow\). Parentheses override this, exactly as in arithmetic. The <b>main connective</b> is the one applied last, sitting outside every parenthesis. It decides what the final column means.</p>
+<table class="tt"><tr><th>Formula</th><th>Main connective</th><th>Pieces</th></tr>
+<tr><td>\(p\lor(q\land r)\)</td><td>\(\lor\)</td><td>\(p\) and \(q\land r\)</td></tr>
+<tr><td>\(\neg p\land q\)</td><td>\(\land\)</td><td>\(\neg p\) and \(q\)</td></tr>
+<tr><td>\(((p\to q)\land p)\to q\)</td><td>the last \(\to\)</td><td>\((p\to q)\land p\) and \(q\)</td></tr></table>
+<h4>Counting the rows where a statement is true</h4>
+<p><b>Method 1: the full table.</b> Give each inner piece a letter, working inside out (\(A = q\land r\), then \(S = p\lor A\)). List all \(2^n\) rows: the first letter in blocks of half the rows, the next in blocks of a quarter, the last alternating. Fill one column at a time, each from columns already done. Count the T entries in the last column.</p>
+<p><b>Method 2: shortcuts from the main connective.</b> Often it is faster to count the rows where the statement is <i>false</i>, because \(\lor\) and \(\to\) fail in only one pattern.</p>
+<table class="tt"><tr><th>Main connective</th><th>True rows</th></tr>
+<tr><td>\(A\land B\)</td><td>rows where both are T</td></tr>
+<tr><td>\(A\lor B\)</td><td>\(2^n\) minus rows where both are F</td></tr>
+<tr><td>\(A\to B\)</td><td>\(2^n\) minus rows with \(A\) T and \(B\) F</td></tr>
+<tr><td>\(A\leftrightarrow B\)</td><td>rows where \(A\) and \(B\) match</td></tr>
+<tr><td>\(\neg A\)</td><td>\(2^n\) minus rows where \(A\) is T</td></tr></table>
+<p><b>Method 3: split on one letter.</b> Fix \(p\) = T and count the true rows among those \(2^{n-1}\); fix \(p\) = F and count again; add. Each half is a smaller problem, and often one half is all T or all F.</p>
+<p>A tautology is true in all \(2^n\) rows and a contradiction in 0, so recognizing either gives the count at once.</p>`,
+    exs: [
+      { q: T`In how many rows of its truth table is \(p\lor(q\land r)\) true?`, a: T`
+<p>Name the inner piece \(A = q\land r\), so the statement is \(S = p\lor A\). Three letters give \(2^3 = 8\) rows.</p>
+<table class="tt tv"><tr><th>\(p\)</th><th>\(q\)</th><th>\(r\)</th><th>\(A\)</th><th>\(S\)</th></tr>
+<tr><td>T</td><td>T</td><td>T</td><td>T</td><td><b>T</b></td></tr><tr><td>T</td><td>T</td><td>F</td><td>F</td><td><b>T</b></td></tr>
+<tr><td>T</td><td>F</td><td>T</td><td>F</td><td><b>T</b></td></tr><tr><td>T</td><td>F</td><td>F</td><td>F</td><td><b>T</b></td></tr>
+<tr><td>F</td><td>T</td><td>T</td><td>T</td><td><b>T</b></td></tr><tr><td>F</td><td>T</td><td>F</td><td>F</td><td>F</td></tr>
+<tr><td>F</td><td>F</td><td>T</td><td>F</td><td>F</td></tr><tr><td>F</td><td>F</td><td>F</td><td>F</td><td>F</td></tr></table>
+<p>\(A\) is T only when \(q\) and \(r\) are both T. \(S\) is T whenever \(p\) or \(A\) is. Column \(S\) has 5 T entries.</p>
+<p>Check by splitting on \(p\): the 4 rows with \(p\) true are all true; of the 4 rows with \(p\) false, only \(q\) T, \(r\) T works. \(4 + 1 = 5\).</p>` },
+      { q: T`In how many rows of its truth table is \(((p\to q)\land p)\to q\) true?`, a: T`
+<p>Name the pieces: \(A = p\to q\), \(B = A\land p\), \(S = B\to q\). Two letters give 4 rows.</p>
+<table class="tt tv"><tr><th>\(p\)</th><th>\(q\)</th><th>\(A\)</th><th>\(B\)</th><th>\(S\)</th></tr>
+<tr><td>T</td><td>T</td><td>T</td><td>T</td><td><b>T</b></td></tr><tr><td>T</td><td>F</td><td>F</td><td>F</td><td><b>T</b></td></tr>
+<tr><td>F</td><td>T</td><td>T</td><td>F</td><td><b>T</b></td></tr><tr><td>F</td><td>F</td><td>T</td><td>F</td><td><b>T</b></td></tr></table>
+<p>\(A\) is F only in the row T, F. \(B\) needs \(A\) and \(p\) both T: only the first row. \(S\) fails only when \(B\) is T and \(q\) is F, which never happens. All 4 rows are true.</p>
+<p>Shortcut: hunt for a false row. The main connective is \(\to\), so a false row needs \(B\) true and \(q\) false. \(B\) true needs \(p\) true and \(p\to q\) true, which forces \(q\) true. No false row exists, so the answer is \(2^2 = 4\): a tautology.</p>` },
+      { q: T`In how many rows is \((p\land q)\to r\) true?`, a: T`
+<p>Count false rows instead. A conditional is false only when its hypothesis is T and its conclusion F: \(p\land q\) T and \(r\) F. That is the single row \(p\) T, \(q\) T, \(r\) F.</p>
+<p>True rows: \(8 - 1 = 7\).</p>` }
+    ],
+    vary: [
+      [T`How many rows does a truth table with 4 variables have?`, 16, T`\(2^4\): each new letter doubles the count.`],
+      [T`In how many rows is \(p\land q\land r\) true?`, 1, T`Every part must be T: only the row T, T, T.`],
+      [T`In how many rows is \(p\lor q\lor r\) true?`, 7, T`An "or" is false only when every part is F: one row, so \(8 - 1\).`],
+      [T`In how many rows is \(p\to(q\land r)\) true?`, 5, T`It fails when \(p\) is T and \(q\land r\) is F. \(q\land r\) is F in 3 of the 4 \((q, r)\) pairs, so 3 false rows: \(8 - 3\).`],
+      [T`In how many rows is \(q\land(p\lor r)\) true?`, 3, T`Split on \(q\). With \(q\) F, none. With \(q\) T, you need \(p\lor r\), true in 3 of the 4 \((p, r)\) pairs.`],
+      [T`In how many rows is \((p\lor q)\land\neg r\) true?`, 3, T`\(r\) must be F (4 rows), and among those \(p\lor q\) is true in all but F, F: 3.`]
+    ]
+  });
+
   extendCard('discrete', 'Counting principles', {
     more: T`
 <h4>Stars and bars</h4>

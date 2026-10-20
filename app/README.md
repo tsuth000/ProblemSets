@@ -104,3 +104,9 @@ Each subject lives in assets/js/subjects/<name>.js.
 - Algebra, "Graphs of quadratics": rewritten notes on the three forms (standard, vertex, factored), the axis of symmetry (definition, the derivation of x = -b/(2a) by completing the square, sign handling, and three other routes: vertex form, the average of the roots, two points at equal height), the vertex as maximum or minimum, and completing the square with a ≠ 1. Four new worked examples and ten "Your turn" problems.
 - Algebra, "Quadratic equations": a methods table, factoring with a ≠ 1 by the ac method, and a worked grouping example.
 - `au-axis` now asks six kinds of axis question: standard form with and without real roots, factored form, vertex form, two points at equal height, and recovering b from a given axis; explanations show the signs of a and b explicitly.
+
+## Version 1.21: truth tables
+
+- Discrete, "Propositions and truth tables": new notes on reading a formula (precedence and the main connective) and three ways to count the rows where a statement is true: the full table built inside out, shortcuts that count false rows for "or" and "if-then", and splitting on one letter. Three worked examples with full tables, including p ∨ (q ∧ r) and ((p → q) ∧ p) → q, and six "Your turn" problems.
+- `du-count` explanations now name each inner piece, show the complete truth table with every intermediate column, count the true rows, and give the shortcut for that formula. `du-eval` substitutes the given values one piece at a time. `du-taut` shows the table behind its classification.
+- Truth tables in explanations are centered and sized for phone width.

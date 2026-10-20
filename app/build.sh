@@ -4,7 +4,7 @@ SDK=/opt/android; BT=$SDK/build-tools/35.0.0; JAR=$SDK/platforms/android-34/andr
 rm -rf build && mkdir -p build/gen build/classes build/dex build/res
 $BT/aapt2 compile --dir res -o build/res/compiled.zip
 $BT/aapt2 link -I $JAR --manifest AndroidManifest.xml -A assets \
-  --min-sdk-version 24 --target-sdk-version 34 --version-code 26 --version-name 1.20 \
+  --min-sdk-version 24 --target-sdk-version 34 --version-code 27 --version-name 1.21 \
   --java build/gen -o build/unsigned.apk build/res/compiled.zip
 javac --release 8 -Xlint:-options -cp $JAR -d build/classes $(find src build/gen -name '*.java')
 $BT/d8 --release --lib $JAR --min-api 24 --output build/dex $(find build/classes -name '*.class')

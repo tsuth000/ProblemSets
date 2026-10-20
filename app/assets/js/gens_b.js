@@ -191,6 +191,39 @@
     ['p\\to(p\\lor q)', (p, q) => !p || p || q, '(not p) or (p or q)', 2], ['((p\\to q)\\land p)\\to q', (p, q) => !((!p || q) && p) || q, '(not (((not p) or q) and p)) or q', 2],
     ['(p\\to q)\\land(p\\land\\neg q)', (p, q) => (!p || q) && p && !q, '((not p) or q) and (p and (not q))', 2], ['(p\\lor q)\\to p', (p, q) => !(p || q) || p, '(not (p or q)) or p', 2],
     ['\\neg(p\\land q)\\leftrightarrow(\\neg p\\lor\\neg q)', (p, q) => !(p && q) === (!p || !q), '(not (p and q)) == ((not p) or (not q))', 2], ['(p\\land q)\\land\\neg(p\\lor q)', (p, q) => p && q && !(p || q), '(p and q) and (not (p or q))', 2]];
+  // Inside-out columns for each formula: [name, template, value]. Tokens {p}, {A}, ... are letters or truth values.
+  const imp = (a, b) => !a || b;
+  const STEPS = {
+    'p\\land q': [[['S', '{p} \\land {q}', e => e.p && e.q]], T`An "and" is true only when every part is true: the single row \(p\) T, \(q\) T.`],
+    'p\\lor q': [[['S', '{p} \\lor {q}', e => e.p || e.q]], T`An "or" is false only when every part is false. That is one row (F, F), so \(4 - 1 = 3\).`],
+    'p\\to q': [[['S', '{p} \\to {q}', e => imp(e.p, e.q)]], T`A conditional is false only in the row T \(\to\) F (\(p\) T, \(q\) F), so \(4 - 1 = 3\).`],
+    'p\\leftrightarrow q': [[['S', '{p} \\leftrightarrow {q}', e => e.p === e.q]], T`A biconditional is true when the two sides match: T, T and F, F. That is 2 rows.`],
+    'p\\land\\neg q': [[['A', '\\neg {q}', e => !e.q], ['S', '{p} \\land {A}', e => e.p && e.A]], T`Both parts must hold: \(p\) true and \(q\) false. That is 1 row.`],
+    '\\neg(p\\lor q)': [[['A', '{p} \\lor {q}', e => e.p || e.q], ['S', '\\neg {A}', e => !e.A]], T`\(p\lor q\) is false in 1 row (F, F), and the negation is true exactly there: 1 row.`],
+    '(p\\land q)\\to r': [[['A', '{p} \\land {q}', e => e.p && e.q], ['S', '{A} \\to {r}', e => imp(e.A, e.r)]], T`The conditional fails only when its hypothesis \(p\land q\) is true and \(r\) is false: \(p\) T, \(q\) T, \(r\) F. One false row, so \(8 - 1 = 7\).`],
+    'p\\lor(q\\land r)': [[['A', '{q} \\land {r}', e => e.q && e.r], ['S', '{p} \\lor {A}', e => e.p || e.A]], T`Split on \(p\). The 4 rows with \(p\) true are all true. Among the 4 rows with \(p\) false, you need \(q\land r\), which holds in 1 of them. Total \(4 + 1 = 5\).`],
+    '(p\\to q)\\land(q\\to r)': [[['A', '{p} \\to {q}', e => imp(e.p, e.q)], ['B', '{q} \\to {r}', e => imp(e.q, e.r)], ['S', '{A} \\land {B}', e => e.A && e.B]], T`Both conditionals must hold, so reading \(p, q, r\) in order the values may never drop from T to F. The allowed rows are TTT, FTT, FFT, FFF: 4 rows.`],
+    '(p\\land q)\\to p': [[['A', '{p} \\land {q}', e => e.p && e.q], ['S', '{A} \\to {p}', e => imp(e.A, e.p)]], T`To fail, \(p\land q\) must be true while \(p\) is false, which is impossible. True in all 4 rows (a tautology).`],
+    'p\\to(p\\lor q)': [[['A', '{p} \\lor {q}', e => e.p || e.q], ['S', '{p} \\to {A}', e => imp(e.p, e.A)]], T`To fail, \(p\) must be true while \(p\lor q\) is false, which is impossible. True in all 4 rows (a tautology).`],
+    '((p\\to q)\\land p)\\to q': [[['A', '{p} \\to {q}', e => imp(e.p, e.q)], ['B', '{A} \\land {p}', e => e.A && e.p], ['S', '{B} \\to {q}', e => imp(e.B, e.q)]], T`To fail, the hypothesis must be true and \(q\) false. With \(q\) false, \(p\to q\) forces \(p\) false, and then the hypothesis is false. It never fails: all 4 rows (modus ponens).`],
+    '(p\\to q)\\land(p\\land\\neg q)': [[['A', '{p} \\to {q}', e => imp(e.p, e.q)], ['B', '\\neg {q}', e => !e.q], ['C', '{p} \\land {B}', e => e.p && e.B], ['S', '{A} \\land {C}', e => e.A && e.C]], T`The second part needs \(p\) T and \(q\) F, which is exactly the row where \(p\to q\) is false. The parts never hold together: 0 rows.`],
+    '(p\\lor q)\\to p': [[['A', '{p} \\lor {q}', e => e.p || e.q], ['S', '{A} \\to {p}', e => imp(e.A, e.p)]], T`It fails only when \(p\lor q\) is true and \(p\) is false: \(p\) F, \(q\) T. One false row, so \(4 - 1 = 3\).`],
+    '\\neg(p\\land q)\\leftrightarrow(\\neg p\\lor\\neg q)': [[['A', '{p} \\land {q}', e => e.p && e.q], ['B', '\\neg {A}', e => !e.A], ['C', '\\neg {p} \\lor \\neg {q}', e => !e.p || !e.q], ['S', '{B} \\leftrightarrow {C}', e => e.B === e.C]], T`This is De Morgan's law: the two sides agree in every row, so the biconditional is true in all 4.`],
+    '(p\\land q)\\land\\neg(p\\lor q)': [[['A', '{p} \\land {q}', e => e.p && e.q], ['B', '{p} \\lor {q}', e => e.p || e.q], ['C', '\\neg {B}', e => !e.B], ['S', '{A} \\land {C}', e => e.A && e.C]], T`\(p\land q\) needs both true, but then \(p\lor q\) is true and its negation false: 0 rows.`],
+    'p\\lor\\neg p': [[['A', '\\neg {p}', e => !e.p], ['S', '{p} \\lor {A}', e => e.p || e.A]], ''],
+    'p\\land\\neg p': [[['A', '\\neg {p}', e => !e.p], ['S', '{p} \\land {A}', e => e.p && e.A]], '']
+  };
+  const VARS = ['p', 'q', 'r'], TV = b => (b ? 'T' : 'F');
+  const fillT = (tmpl, sub) => tmpl.replace(/\{(\w)\}/g, (m, k) => sub(k));
+  const defsOf = tex => STEPS[tex][0].map(([nm, t]) => T`\(${nm} = ${fillT(t, k => k)}\)`).join(', ');
+  // Runs the columns on one row: returns the environment with every named column filled in.
+  const runRow = (tex, vals) => { const e = {}; vals.forEach((b, i) => { e[VARS[i]] = b; }); for (const [nm, , fn] of STEPS[tex][0]) e[nm] = fn(e); return e; };
+  const truthTable = (tex, n) => { const cols = STEPS[tex][0].map(c => c[0]), head = [...VARS.slice(0, n), ...cols];
+    const rows = rowsOf(n).map(r => { const e = runRow(tex, r); return '<tr>' + head.map((h, j) => (j === head.length - 1 && e[h] ? '<td><b>T</b></td>' : `<td>${TV(e[h])}</td>`)).join('') + '</tr>'; });
+    return `<table class="tt tv"><tr>${head.map(h => T`<th>\(${h}\)</th>`).join('')}</tr>${rows.join('')}</table>`; };
+  const rowOrder = n => (n === 1 ? 'T then F' : n === 2 ? T`\(p\) in blocks of 2, \(q\) alternating` : T`\(p\) in blocks of 4, \(q\) in blocks of 2, \(r\) alternating`);
+  const evalSteps = (tex, vals) => { const e = runRow(tex, vals), sub = k => T`\mathrm{${TV(e[k])}}`;
+    return STEPS[tex][0].map(([nm, t]) => T`<p>\(${nm} = ${fillT(t, k => k)} = ${fillT(t, sub)} = \mathrm{${TV(e[nm])}}\)</p>`).join(''); };
   const classify = (f, n) => { const v = rowsOf(n).map(r => f(...r)); return v.every(Boolean) ? 'tautology' : v.some(Boolean) ? 'contingency' : 'contradiction'; };
   const TWO = [['\\neg p\\lor q', (p, q) => !p || q, '(not p) or q'], ['\\neg q\\to\\neg p', (p, q) => q || !p, 'q or (not p)'], ['q\\to p', (p, q) => !q || p, '(not q) or p'], ['\\neg p\\to\\neg q', (p, q) => p || !q, 'p or (not q)'],
     ['p\\land\\neg q', (p, q) => p && !q, 'p and (not q)'], ['\\neg p\\land\\neg q', (p, q) => !p && !q, '(not p) and (not q)'], ['\\neg p\\lor\\neg q', (p, q) => !p || !q, '(not p) or (not q)'], ['\\neg(p\\land q)', (p, q) => !(p && q), 'not (p and q)'],
@@ -207,14 +240,14 @@
         { id: 'du-eval', make(R) { const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), vals = Array.from({ length: n }, () => R.pick(TF)), out = f(...vals);
           const names = ['p', 'q', 'r'].slice(0, n);
           return { q: T`With ${names.map((v, i) => `\\(${v}\\) ${tv(vals[i])}`).join(', ')}, is \(${tex}\) true or false?`, c: out ? ['True', 'False'] : ['False', 'True'],
-            x: T`Evaluate from the inside out with those values. The result is ${tv(out)}.`, key: out ? 'True' : 'False', vk: `str(bool((lambda p, q=False, r=False: ${py})(${vals.map(b => (b ? 'True' : 'False')).join(', ')})))` }; } },
+            x: T`<p>Name the pieces from the inside out: ${defsOf(tex)}. Then substitute the given values one piece at a time.</p>${evalSteps(tex, vals)}<p>So the statement is ${tv(out)}.</p>`, key: out ? 'True' : 'False', vk: `str(bool((lambda p, q=False, r=False: ${py})(${vals.map(b => (b ? 'True' : 'False')).join(', ')})))` }; } },
         { id: 'du-count', make(R) { const [tex, f, py, n] = R.pick(FORMS.filter(F => F[3] > 1)), cnt = rowsOf(n).filter(r => f(...r)).length;
-          return { q: T`In how many rows of its truth table is \(${tex}\) true?`, answer: cnt, x: T`The table has \(2^${n} = ${2 ** n}\) rows; ${cnt} of them come out true.`,
+          return { q: T`In how many rows of its truth table is \(${tex}\) true?`, answer: cnt, x: T`<p>1. Name the pieces from the inside out: ${defsOf(tex)}.</p><p>2. List all \(2^${n} = ${2 ** n}\) rows (${rowOrder(n)}) and fill each column from the ones before it.</p>${truthTable(tex, n)}<p>3. Count the T entries in column \(S\): ${cnt}.</p><p>Shortcut: ${STEPS[tex][1]}</p>`,
             v: `sum(1 for vv in product([True, False], repeat=${n}) if (lambda p, q=False, r=False: ${py})(*vv))` }; } }
       ],
       'Tautologies and contradictions': [
         { id: 'du-taut', make(R) { const [tex, f, py, n] = R.pick(FORMS), k = classify(f, n), others = ['tautology', 'contradiction', 'contingency'].filter(z => z !== k);
-          return { q: T`Classify \(${tex}\).`, c: [k, ...others], x: T`Check every row: ${k === 'tautology' ? 'all are true' : k === 'contradiction' ? 'all are false' : 'some are true and some false'}, so it is a ${k}.`, key: k, vk: `cls(lambda p, q=False, r=False: ${py}, ${n})` }; } }
+          return { q: T`Classify \(${tex}\).`, c: [k, ...others], x: T`<p>Name the pieces: ${defsOf(tex)}. Fill in every row.</p>${truthTable(tex, n)}<p>Column \(S\) is ${k === 'tautology' ? 'all T' : k === 'contradiction' ? 'all F' : 'a mix of T and F'}, so it is a ${k}.</p>`, key: k, vk: `cls(lambda p, q=False, r=False: ${py}, ${n})` }; } }
       ],
       'Equivalences and negation': [
         { id: 'du-equiv', make(R) { let t, eq, non; do { t = R.pick(TWO); eq = TWO.filter(o => o !== t && sig(o[1]) === sig(t[1])); non = TWO.filter(o => sig(o[1]) !== sig(t[1])); } while (!eq.length || non.length < 3);
